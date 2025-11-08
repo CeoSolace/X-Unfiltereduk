@@ -4,8 +4,16 @@
 import { useState, useRef } from 'react';
 import { useUser } from '@/hooks/useUser';
 
+// Extend the inferred user type to include profile fields
+interface UserProfile extends ReturnType<typeof useUser>['user'] {
+  bio?: string;
+  location?: string;
+  avatar?: string;
+  header?: string;
+}
+
 export default function ProfileSettings() {
-  const { user } = useUser();
+  const { user } = useUser() as { user: UserProfile | null | undefined };
   const [bio, setBio] = useState(user?.bio || '');
   const [location, setLocation] = useState(user?.location || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
