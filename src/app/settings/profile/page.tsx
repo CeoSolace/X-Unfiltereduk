@@ -4,18 +4,24 @@
 import { useState, useRef } from 'react';
 import { useUser } from '@/hooks/useUser';
 
-// Extend the inferred user type to include profile fields
-interface UserProfile extends ReturnType<typeof useUser>['user'] {
+// Define a clean user shape that includes optional profile fields
+interface UserProfile {
+  id: string;
+  username: string;
   bio?: string;
   location?: string;
   avatar?: string;
   header?: string;
+  isPremium?: boolean;
+  isVerified?: boolean;
 }
 
 export default function ProfileSettings() {
-  const { user } = useUser() as { user: UserProfile | null | undefined };
-  const [bio, setBio] = useState(user?.bio || '');
-  const [location, setLocation] = useState(user?.location || '');
+  const { user } = useUser();
+  const typedUser = user as UserProfile | null | undefined;
+
+  const [bio, setBio] = useState(typedUser?.bio || '');
+  const [location, setLocation] = useState(typedUser?.location || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const avatarRef = useRef<HTMLInputElement>(null);
@@ -43,7 +49,7 @@ export default function ProfileSettings() {
         <div>
           <label className="block font-medium">Avatar</label>
           <img
-            src={avatarFile ? URL.createObjectURL(avatarFile) : user?.avatar}
+            src={avatarFile ? URL.createObjectURL(avatarFile) : typedUser?.avatar}
             alt="Preview"
             className="w-16 h-16 rounded-full my-2"
           />
@@ -59,7 +65,7 @@ export default function ProfileSettings() {
         <div>
           <label className="block font-medium">Header</label>
           <img
-            src={headerFile ? URL.createObjectURL(headerFile) : user?.header}
+            src={headerFile ? URL.createObjectURL(headerFile) : typedUser?.header}
             alt="Preview"
             className="w-full h-32 object-cover my-2"
           />
