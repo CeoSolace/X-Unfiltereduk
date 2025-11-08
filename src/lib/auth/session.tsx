@@ -1,4 +1,3 @@
-// src/lib/auth/session.tsx
 'use server';
 
 import { jwtVerify, SignJWT } from 'jose';
@@ -37,7 +36,7 @@ export async function createSession(userId: string): Promise<void> {
     following: (user.following || []).map((id: any) => id.toString()),
   };
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const token = await new SignJWT(session)
+  const token = await new SignJWT(session as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
     .sign(JWT_SECRET);
