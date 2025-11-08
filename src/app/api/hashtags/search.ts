@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const hashtagSet = new Set<string>();
   posts.forEach(post => {
-    post.hashtags?.forEach(tag => {
+    (post.hashtags as string[])?.forEach((tag: string) => {
       if (tag.toLowerCase().startsWith(q.toLowerCase())) {
         hashtagSet.add(tag);
       }
