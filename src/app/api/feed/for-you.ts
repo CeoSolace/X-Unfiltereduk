@@ -2,39 +2,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth/session';
 import { connectDB } from '@/lib/api/client';
-import { User } from '@/models/User';
 import { Post } from '@/models/Post';
-import { Community } from '@/models/Community';
+import { User } from '@/models/User';
 import { trackEvent } from '@/lib/utils/trackEvent';
 
-// Simple but production-grade engagement scorer
-function scorePost(post, userBehavior: Record<string, any>, currentTime: number) {
+// ✅ Define the expected shape of a "lean" post
+interface LeanPost {
+  _id: string;
+  author: {
+    _id: string;
+    username: string;
+    verified: boolean;
+    isPremium: boolean;
+  };
+  content: string;
+  media: Array<{ url: string; type: string }>;
+  mentions: string[];
+  hashtags: string[];
+  visibility: string;
+  community?: string;
+  likes?: string[];
+  reposts?: string[];
+  createdAt: Date;
+}
+
+function scorePost(
+  post: LeanPost, // ✅ typed
+  userBehavior: Record<string, any>,
+  currentTime: number
+) {
   const ageHours = (currentTime - new Date(post.createdAt).getTime()) / (1000 * 60 * 60);
-  if (ageHours > 48) return 0; // Fade out after 48h
+  if (ageHours > 48) return 0;
 
   let score = 0;
-
-  // Base engagement: likes + reposts
   const engagement = (post.likes?.length || 0) + (post.reposts?.length || 0);
   score += Math.log1p(engagement) * 10;
-
-  // Recency boost (exponential decay)
   score += Math.max(0, 50 - ageHours * 2);
 
-  // Author affinity (if user has interacted with author before)
-  if (userBehavior.likedAuthors?.includes(post.author?.toString())) {
+  if (userBehavior.likedAuthors?.includes(post.author._id)) {
     score += 15;
   }
-  if (userBehavior.repostedAuthors?.includes(post.author?.toString())) {
+  if (userBehavior.repostedAuthors?.includes(post.author._id)) {
     score += 20;
   }
-
-  // Community affinity
-  if (post.community && userBehavior.activeCommunities?.includes(post.community.toString())) {
+  if (post.community && userBehavior.activeCommunities?.includes(post.community)) {
     score += 25;
   }
-
-  // Hashtag resonance (if user engages with these tags)
   const commonTags = post.hashtags?.filter(tag => userBehavior.activeHashtags?.includes(tag)) || [];
   score += commonTags.length * 8;
 
@@ -52,16 +65,12 @@ export async function POST(req: NextRequest) {
   const userId = session.userId;
   const currentTime = Date.now();
 
-  // 🔥 Trigger behavioral tracking (skipped if Premium)
   await trackEvent(userId, 'feed_view', { feed_type: 'for_you' });
 
-  // Fetch user behavior profile (from past interactions)
   const user = await User.findById(userId).select('isPremium');
   let userBehavior = { likedAuthors: [], repostedAuthors: [], activeCommunities: [], activeHashtags: [] };
 
   if (!user?.isPremium) {
-    // In real system: fetch from analytics DB or precomputed profile
-    // For MVP: simulate from recent actions
     const recentLikes = await Post.find({ likes: userId }).limit(100).select('author hashtags community');
     const recentReposts = await Post.find({ reposts: userId }).limit(100).select('author hashtags community');
 
@@ -70,13 +79,12 @@ export async function POST(req: NextRequest) {
     const activeCommunities = new Set<string>();
     const activeHashtags = new Set<string>();
 
-    [...recentLikes, ...recentReposts].forEach(post => {
-      likedAuthors.add(post.author?.toString());
-      if (post.community) activeCommunities.add(post.community.toString());
-      post.hashtags?.forEach(tag => activeHashtags.add(tag));
+    [...recentLikes, ...recentReposts].forEach(p => {
+      likedAuthors.add(p.author?._id.toString());
+      if (p.community) activeCommunities.add(p.community.toString());
+      p.hashtags?.forEach(tag => activeHashtags.add(tag));
     });
-
-    repostedAuthors.add(...recentReposts.map(p => p.author?.toString()));
+    repostedAuthors.add(...recentReposts.map(p => p.author?._id.toString()));
 
     userBehavior = {
       likedAuthors: Array.from(likedAuthors),
@@ -86,8 +94,7 @@ export async function POST(req: NextRequest) {
     };
   }
 
-  // Fetch candidate posts (last 48 hours, public or from followed users)
-  const followedUsers = await User.findById(userId).distinct('following'); // assuming `following` field exists
+  const followedUsers = await User.findById(userId).distinct('following');
   const candidatePosts = await Post.find({
     $or: [
       { author: { $in: [userId, ...followedUsers] } },
@@ -96,12 +103,11 @@ export async function POST(req: NextRequest) {
     createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) }
   })
     .sort({ createdAt: -1 })
-    .limit(200) // cap for performance
+    .limit(200)
     .populate('author', 'username verified isPremium')
-    .lean();
+    .lean(); // Returns LeanPost[]
 
-  // Score and rank
-  const scoredPosts = candidatePosts
+  const scoredPosts = (candidatePosts as LeanPost[])
     .map(post => ({
       ...post,
       __score: scorePost(post, userBehavior, currentTime)
