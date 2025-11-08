@@ -3,7 +3,6 @@
 
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { User } from '@/models/User';
 import { connectDB } from '@/lib/api/client';
 
@@ -64,17 +63,4 @@ export async function verifySession(): Promise<SessionPayload | null> {
     cookies().delete('session');
     return null;
   }
-}
-
-// ✅ This is a valid React Server Component
-export async function AuthProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const session = await verifySession();
-  if (!session) {
-    redirect('/login');
-  }
-  return <>{children}</>;
 }
