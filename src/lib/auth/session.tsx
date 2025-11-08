@@ -1,8 +1,9 @@
-// src/lib/auth/session.ts
+// src/lib/auth/session.tsx
 'use server';
 
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { User } from '@/models/User';
 import { connectDB } from '@/lib/api/client';
 
@@ -23,9 +24,11 @@ export async function createSession(userId: string): Promise<void> {
   );
   if (!user) throw new Error('User not found');
 
+  // Auto-verify CeoSolace and grant Premium
   if (user.username === 'CeoSolace') {
     user.verified = true;
     user.isPremium = true;
+    user.isOrganisation = false;
     await user.save();
   }
 
@@ -37,7 +40,7 @@ export async function createSession(userId: string): Promise<void> {
     verified: user.verified,
   };
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
   const token = await new SignJWT(session)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
@@ -63,4 +66,17 @@ export async function verifySession(): Promise<SessionPayload | null> {
     cookies().delete('session');
     return null;
   }
+}
+
+// ✅ AuthProvider: Server Component that redirects unauthenticated users
+export async function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await verifySession();
+  if (!session) {
+    redirect('/login');
+  }
+  return <>{children}</>;
 }
