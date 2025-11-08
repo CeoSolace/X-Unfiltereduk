@@ -1,6 +1,6 @@
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: 'standalone',
   experimental: {
     serverComponentsExternalPackages: ['mongoose', 'stripe', 'cloudinary'],
@@ -18,4 +18,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
