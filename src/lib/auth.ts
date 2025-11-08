@@ -1,13 +1,11 @@
-// ./src/lib/auth.ts
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    // Keep this minimal for now—you can add real providers later
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -15,7 +13,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        // Replace with real auth logic when ready
         if (!credentials?.email) return null;
         return { id: '1', email: credentials.email, name: 'Dev User' };
       }
@@ -27,7 +24,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub as string; // NextAuth JWT uses `sub` as user ID by default
+        session.user.id = token.sub as string;
       }
       return session;
     },
