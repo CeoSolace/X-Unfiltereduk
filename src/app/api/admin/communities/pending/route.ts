@@ -10,13 +10,11 @@ export async function GET(req: NextRequest) {
 
   await connectDB();
 
-  // Fetch pending communities and populate creator
   const communities = await Community.find({ status: 'pending' })
     .populate('creator', 'username')
     .sort({ createdAt: -1 })
-    .lean(); // Returns plain objects
+    .lean();
 
-  // Map safely — no type assertion needed
   const result = communities.map(c => ({
     id: String(c._id),
     name: String(c.name || ''),
