@@ -6,9 +6,15 @@ import { useUser } from '@/hooks/useUser';
 import { PostCard } from '@/components/feed/PostCard';
 import { FeedSwitcher } from '@/components/feed/FeedSwitcher';
 
+// Define the shape of a post explicitly
+interface FeedPost {
+  id: string;
+  [key: string]: any; // keeps it flexible but ensures `id` exists
+}
+
 export default function ForYouFeed() {
   const { user, loading: userLoading } = useUser();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
