@@ -1,59 +1,48 @@
 // src/lib/utils/trackEvent.ts
 'use server';
 
+import { headers } from 'next/headers';
 import { connectDB } from '@/lib/api/client';
 import { User } from '@/models/User';
+import { Behavior } from '@/models/Behavior';
 import { hashIp } from './hashIp';
 import { v4 as uuidv4 } from 'uuid';
-
-// Create a lean tracking model — never store PII
-const { Schema, model, models } = require('mongoose');
-
-const BehaviorSchema = new Schema(
-  {
-    userId: { type: String, required: true, index: true },
-    sessionId: { type: String, required: true },
-    event: { type: String, required: true },
-    metadata: { type: Schema.Types.Mixed },
-    hashedIp: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
-  },
-  { collection: 'userBehaviors' }
-);
-
-const Behavior = models.Behavior || model('Behavior', BehaviorSchema);
 
 export async function trackEvent(
   userId: string,
   event: string,
-  metadata: Record<string, any> = {},
-  ip?: string
+  metadata Record<string, any> = {}
 ) {
-  // 🔐 First: verify user exists and is NOT Premium
   await connectDB();
+
+  // 1. Check if user is Premium (includes CeoSolace)
   const user = await User.findById(userId).select('isPremium');
   if (!user || user.isPremium) {
-    // Premium users (including CeoSolace) are **excluded by design**
-    return;
+    return; // Premium = no tracking. Period.
   }
 
-  // Hash IP with pepper from .env — GDPR-compliant anonymization
-  const hashedIp = ip ? hashIp(ip) : 'unknown';
+  // 2. Get real IP from headers (Render.com compatible)
+  const hdrs = headers();
+  const ip =
+    hdrs.get('x-real-ip') ||
+    hdrs.get('x-forwarded-for')?.split(',')[0] ||
+    '127.0.0.1';
 
-  // Generate ephemeral session ID (for cohort analysis without cookies)
+  // 3. Hash IP with your pepper
+  const hashedIp = hashIp(ip);
+
+  // 4. Generate session ID (for funnel analysis)
   const sessionId = uuidv4();
 
-  // Write to dedicated analytics collection
-  try {
-    await Behavior.create({
-      userId,
-      sessionId,
-      event,
-      metadata,
-      hashedIp,
-    });
-  } catch (err) {
-    // Fail silently — tracking must never break core UX
-    console.error('Tracking write failed (non-critical):', err);
-  }
+  // 5. Write to DB — fire-and-forget, non-blocking
+  await Behavior.create({
+    userId,
+    sessionId,
+    event,
+    metadata,
+    hashedIp,
+  }).catch((err) => {
+    // Log silently — never break UX for tracking failure
+    console.error('Behavior write failed:', err);
+  });
 }
