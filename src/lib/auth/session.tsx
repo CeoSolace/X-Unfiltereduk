@@ -1,6 +1,6 @@
 'use server';
 
-import { jwtVerify, SignJWT, JWTPayload } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { User } from '@/models/User';
@@ -35,12 +35,12 @@ export async function createSession(userId: string): Promise<void> {
     verified: user.verified,
     following: (user.following || []).map((id: any) => id.toString()),
   };
-  const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // Unix timestamp (seconds)
+  const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
   const token = await new SignJWT(session as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
     .sign(JWT_SECRET);
-  const expiresAtDate = new Date(expiresAt * 1000); // For cookie (expects Date)
+  const expiresAtDate = new Date(expiresAt * 1000);
   cookies().set('session', token, {
     httpOnly: true,
     secure: true,
@@ -60,10 +60,4 @@ export async function verifySession(): Promise<SessionPayload | null> {
     cookies().delete('session');
     return null;
   }
-}
-
-export async function AuthProvider({ children }: { children: React.ReactNode }) {
-  const session = await verifySession();
-  if (!session) redirect('/login');
-  return <>{children}</>;
 }
