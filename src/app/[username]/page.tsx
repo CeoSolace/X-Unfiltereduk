@@ -18,7 +18,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!username) return;
-
     const fetchProfile = async () => {
       try {
         const res = await fetch(`/api/users/profile?username=${encodeURIComponent(username)}`);
@@ -29,48 +28,27 @@ export default function ProfilePage() {
         const data = await res.json();
         setProfile(data.profile);
         setPosts(data.posts || []);
-
-        // ✅ Now safe: currentUser.following exists
-        const following = currentUser?.following?.includes(data.profile.id) || false;
-        setIsFollowing(following);
+        setIsFollowing(currentUser?.following?.includes(data.profile.id) || false);
       } catch (err) {
-        console.error('Profile fetch error:', err);
         router.push('/404');
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, [username, currentUser, router]);
 
   const handleFollow = async () => {
     if (!currentUser || !profile) return;
-
     const url = '/api/users/follow';
     const method = isFollowing ? 'DELETE' : 'POST';
-    const body = isFollowing
-      ? null
-      : JSON.stringify({ targetUserId: profile.id });
-
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body,
-    });
-
-    if (res.ok) {
-      setIsFollowing(!isFollowing);
-    }
+    const body = isFollowing ? null : JSON.stringify({ targetUserId: profile.id });
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+    if (res.ok) setIsFollowing(!isFollowing);
   };
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!profile) {
-    return <div>Profile not found</div>;
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!profile) return <div>Profile not found</div>;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -95,9 +73,7 @@ export default function ProfilePage() {
             <button
               onClick={handleFollow}
               className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                isFollowing
-                  ? 'bg-white text-black border border-gray-300 hover:bg-gray-50'
-                  : 'bg-black text-white hover:bg-gray-800'
+                isFollowing ? 'bg-white text-black border border-gray-300 hover:bg-gray-50' : 'bg-black text-white hover:bg-gray-800'
               }`}
             >
               {isFollowing ? 'Following' : 'Follow'}
@@ -105,14 +81,12 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-
       <div className="border-b border-gray-200 my-4"></div>
-
       <div>
         {posts.length === 0 ? (
           <p className="text-gray-500 py-4 text-center">No posts yet.</p>
         ) : (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          posts.map(post => <PostCard key={post.id} post={post} />)
         )}
       </div>
     </div>
