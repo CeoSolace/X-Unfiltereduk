@@ -6,7 +6,6 @@ import { Post } from '@/models/Post';
 import { User } from '@/models/User';
 import { trackEvent } from '@/lib/utils/trackEvent';
 
-// ✅ Define the expected shape of a "lean" post
 interface LeanPost {
   _id: string;
   author: {
@@ -27,7 +26,7 @@ interface LeanPost {
 }
 
 function scorePost(
-  post: LeanPost, // ✅ typed
+  post: LeanPost,
   userBehavior: Record<string, any>,
   currentTime: number
 ) {
@@ -80,11 +79,13 @@ export async function POST(req: NextRequest) {
     const activeHashtags = new Set<string>();
 
     [...recentLikes, ...recentReposts].forEach(p => {
-      likedAuthors.add(p.author?._id.toString());
+      if (p.author) likedAuthors.add(p.author.toString());
       if (p.community) activeCommunities.add(p.community.toString());
       p.hashtags?.forEach(tag => activeHashtags.add(tag));
     });
-    repostedAuthors.add(...recentReposts.map(p => p.author?._id.toString()));
+    recentReposts.forEach(p => {
+      if (p.author) repostedAuthors.add(p.author.toString());
+    });
 
     userBehavior = {
       likedAuthors: Array.from(likedAuthors),
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
     .sort({ createdAt: -1 })
     .limit(200)
     .populate('author', 'username verified isPremium')
-    .lean(); // Returns LeanPost[]
+    .lean();
 
   const scoredPosts = (candidatePosts as LeanPost[])
     .map(post => ({
