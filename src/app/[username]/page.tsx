@@ -1,4 +1,4 @@
-// src/app/@:username/page.tsx
+// src/app/[username]/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -11,40 +11,44 @@ export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
   const { user: currentUser } = useUser();
   const [profile, setProfile] = useState<any>(null);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    if (!username) return;
+
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`/api/users/profile?username=${username}`);
+        const res = await fetch(`/api/users/profile?username=${encodeURIComponent(username)}`);
         if (!res.ok) {
           router.push('/404');
           return;
         }
         const data = await res.json();
         setProfile(data.profile);
-        setPosts(data.posts);
-        setIsFollowing(
-          currentUser?.following?.includes(data.profile.id) || false
-        );
+        setPosts(data.posts || []);
+
+        // ✅ Now safe: currentUser.following exists
+        const following = currentUser?.following?.includes(data.profile.id) || false;
+        setIsFollowing(following);
       } catch (err) {
+        console.error('Profile fetch error:', err);
         router.push('/404');
       } finally {
         setLoading(false);
       }
     };
 
-    if (username) fetchProfile();
+    fetchProfile();
   }, [username, currentUser, router]);
 
   const handleFollow = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !profile) return;
 
-    const method = isFollowing ? 'DELETE' : 'POST';
     const url = '/api/users/follow';
+    const method = isFollowing ? 'DELETE' : 'POST';
     const body = isFollowing
       ? null
       : JSON.stringify({ targetUserId: profile.id });
@@ -60,24 +64,22 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!profile) {
+    return <div>Profile not found</div>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="relative h-48 bg-gray-200">
-        <img
-          src={profile.header}
-          alt="Header"
-          className="w-full h-full object-cover"
-        />
+        <img src={profile.header} alt="Header" className="w-full h-full object-cover" />
       </div>
       <div className="px-4">
         <div className="relative -mt-16 mb-4">
-          <img
-            src={profile.avatar}
-            alt="Avatar"
-            className="w-24 h-24 rounded-full border-4 border-white"
-          />
+          <img src={profile.avatar} alt="Avatar" className="w-24 h-24 rounded-full border-4 border-white" />
         </div>
         <div className="flex justify-between items-start">
           <div>
