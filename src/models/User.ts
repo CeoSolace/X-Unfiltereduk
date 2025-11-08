@@ -20,6 +20,7 @@ const UserSchema = new Schema(
     password: {
       type: String,
       required: true,
+      select: false,
     },
     verified: {
       type: Boolean,
@@ -38,23 +39,37 @@ const UserSchema = new Schema(
       ref: 'Organisation',
       default: null,
     },
+    following: [{
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: [],
+    }],
     bio: { type: String, default: '' },
     location: { type: String, default: '' },
     avatar: { type: String, default: '/assets/placeholder-avatar.jpg' },
     header: { type: String, default: '/assets/placeholder-header.jpg' },
     createdAt: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-// Auto-verify CeoSolace on save
+// 🔑 CeoSolace: auto-verified + Premium — no email override
 UserSchema.pre('save', async function (next) {
   if (this.username === 'CeoSolace') {
     this.verified = true;
     this.isPremium = true;
     this.isOrganisation = false;
+    // Do NOT touch email — any domain allowed
   }
   next();
 });
+
+UserSchema.index({ username: 1 });
+UserSchema.index({ email: 1 });
+UserSchema.index({ verified: 1 });
+UserSchema.index({ isPremium: 1 });
+UserSchema.index({ following: 1 });
 
 export const User = models.User || model('User', UserSchema);
