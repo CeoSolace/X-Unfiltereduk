@@ -11,7 +11,7 @@
     "@cloudinary/url-gen": "^1.18.0",
     "@headlessui/react": "^2.1.0",
     "@heroicons/react": "^2.1.5",
-    "@stripe/stripe-js": "^4.15.0",
+    "@stripe/stripe-js": "^3.3.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.4.0",
     "jsonwebtoken": "^9.0.2",
@@ -20,6 +20,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "stripe": "^16.10.0",
+    "uuid": "^10.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
     "typescript": "^5.5.4"
   }
 }
