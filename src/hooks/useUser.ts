@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from 'react';
 
-interface UserSession {
+export interface UserSession {
   userId: string;
   username: string;
   verified: boolean;
   isPremium: boolean;
   isOrganisation: boolean;
+  following: string[]; // ← ADD THIS
 }
 
 export function useUser() {
@@ -21,7 +22,11 @@ export function useUser() {
         const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          setUser(data.user);
+          // Ensure `following` is present (default to empty array)
+          setUser({
+            ...data.user,
+            following: data.user.following || [],
+          });
         }
       } catch (err) {
         console.error('Session fetch failed');
