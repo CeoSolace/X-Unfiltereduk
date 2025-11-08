@@ -5,42 +5,40 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { PostCard } from '@/components/feed/PostCard';
 import { FeedSwitcher } from '@/components/feed/FeedSwitcher';
-import { trackEvent } from '@/lib/utils/trackEvent';
 
 export default function ForYouFeed() {
   const { user, loading: userLoading } = useUser();
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user || userLoading) return;
 
-    const loadFeed = async () => {
+    const loadForYouFeed = async () => {
       try {
-        // Fetch For You feed from API
-        const res = await fetch('/api/feed/for-you');
+        const res = await fetch('/api/feed/for-you', {
+          method: 'POST',
+          credentials: 'same-origin',
+        });
+
+        if (!res.ok) throw new Error('Failed to load feed');
+
         const data = await res.json();
         setPosts(data.posts || []);
-      } catch (error) {
-        console.error('Failed to load For You feed');
+      } catch (err) {
+        console.error('For You feed error:', err);
       } finally {
         setLoading(false);
       }
-
-      // Track only if user is NOT Premium
-      if (!user.isPremium) {
-        // This call is safe — server-side `trackEvent` auto-skips Premium
-        trackEvent(user.userId, 'view_feed', { feed: 'for_you' });
-      }
     };
 
-    loadFeed();
+    loadForYouFeed();
   }, [user, userLoading]);
 
   if (userLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-500">Loading your For You feed...</div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-gray-500">Loading For You feed…</div>
       </div>
     );
   }
@@ -48,27 +46,26 @@ export default function ForYouFeed() {
   return (
     <div className="max-w-2xl mx-auto">
       <FeedSwitcher current="for-you" />
-      
-      <div className="border-b border-gray-200 mb-4 pb-2">
+
+      <div className="pb-4 border-b border-gray-200">
         <h1 className="text-xl font-bold">For You</h1>
-        {user?.isPremium && (
+        {user?.isPremium ? (
           <p className="text-sm text-green-600 mt-1">
-            ✅ Premium: No tracking, no algorithmic bias — just relevance.
+            ✅ Premium active — no tracking, no ads, pure feed.
           </p>
-        )}
-        {!user?.isPremium && (
+        ) : (
           <p className="text-sm text-gray-500 mt-1">
-            Personalized using on-platform behavior.
+            Personalized via on-platform behavior (opt-out with Premium).
           </p>
         )}
       </div>
 
-      {posts.length === 0 ? (
-        <p className="text-gray-500 text-center py-10">
-          Nothing to show yet. Follow more people or join Communities!
-        </p>
-      ) : (
+      {posts.length > 0 ? (
         posts.map((post) => <PostCard key={post.id} post={post} />)
+      ) : (
+        <p className="text-gray-500 py-10 text-center">
+          Not enough activity yet. Post, like, or join a Community!
+        </p>
       )}
     </div>
   );
