@@ -15,38 +15,32 @@ export interface SessionPayload {
   isPremium: boolean;
   isOrganisation: boolean;
   verified: boolean;
-  following: string[]; // ✅ now included
+  following: string[];
 }
 
 export async function createSession(userId: string): Promise<void> {
   await connectDB();
-  const user = await User.findById(userId).select(
-    'username isPremium isOrganisation verified following' // ✅ fetch 'following'
-  );
+  const user = await User.findById(userId).select('username isPremium isOrganisation verified following');
   if (!user) throw new Error('User not found');
-
   if (user.username === 'CeoSolace') {
     user.verified = true;
     user.isPremium = true;
     user.isOrganisation = false;
     await user.save();
   }
-
   const session: SessionPayload = {
     userId: user._id.toString(),
     username: user.username,
     isPremium: user.isPremium,
     isOrganisation: user.isOrganisation,
     verified: user.verified,
-    following: (user.following || []).map((id: any) => id.toString()), // ✅ serialize
+    following: (user.following || []).map((id: any) => id.toString()),
   };
-
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const token = await new SignJWT(session)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
     .sign(JWT_SECRET);
-
   cookies().set('session', token, {
     httpOnly: true,
     secure: true,
@@ -59,24 +53,17 @@ export async function createSession(userId: string): Promise<void> {
 export async function verifySession(): Promise<SessionPayload | null> {
   const token = cookies().get('session')?.value;
   if (!token) return null;
-
   try {
     const verified = await jwtVerify(token, JWT_SECRET);
     return verified.payload as SessionPayload;
-  } catch (error) {
+  } catch {
     cookies().delete('session');
     return null;
   }
 }
 
-export async function AuthProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export async function AuthProvider({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
-  if (!session) {
-    redirect('/login');
-  }
+  if (!session) redirect('/login');
   return <>{children}</>;
 }
