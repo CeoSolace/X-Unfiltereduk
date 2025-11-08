@@ -1,6 +1,6 @@
 'use server';
 
-import { jwtVerify, SignJWT } from 'jose';
+import { jwtVerify, SignJWT, JWTPayload } from 'jose';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { User } from '@/models/User';
@@ -55,7 +55,7 @@ export async function verifySession(): Promise<SessionPayload | null> {
   if (!token) return null;
   try {
     const verified = await jwtVerify(token, JWT_SECRET);
-    return verified.payload as SessionPayload;
+    return verified.payload as unknown as SessionPayload;
   } catch {
     cookies().delete('session');
     return null;
