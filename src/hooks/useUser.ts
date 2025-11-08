@@ -9,7 +9,7 @@ export interface UserSession {
   verified: boolean;
   isPremium: boolean;
   isOrganisation: boolean;
-  following: string[]; // ← ADD THIS
+  following: string[];
 }
 
 export function useUser() {
@@ -22,7 +22,6 @@ export function useUser() {
         const res = await fetch('/api/auth/session');
         if (res.ok) {
           const data = await res.json();
-          // Ensure `following` is present (default to empty array)
           setUser({
             ...data.user,
             following: data.user.following || [],
