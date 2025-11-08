@@ -38,15 +38,9 @@ function scorePost(
   score += Math.log1p(engagement) * 10;
   score += Math.max(0, 50 - ageHours * 2);
 
-  if (userBehavior.likedAuthors?.includes(post.author._id)) {
-    score += 15;
-  }
-  if (userBehavior.repostedAuthors?.includes(post.author._id)) {
-    score += 20;
-  }
-  if (post.community && userBehavior.activeCommunities?.includes(post.community)) {
-    score += 25;
-  }
+  if (userBehavior.likedAuthors?.includes(post.author._id)) score += 15;
+  if (userBehavior.repostedAuthors?.includes(post.author._id)) score += 20;
+  if (post.community && userBehavior.activeCommunities?.includes(post.community)) score += 25;
   const commonTags = post.hashtags?.filter(tag => userBehavior.activeHashtags?.includes(tag)) || [];
   score += commonTags.length * 8;
 
@@ -64,6 +58,7 @@ export async function POST(req: NextRequest) {
   const userId = session.userId;
   const currentTime = Date.now();
 
+  // ✅ Correct 3-arg call
   await trackEvent(userId, 'feed_view', { feed_type: 'for_you' });
 
   const user = await User.findById(userId).select('isPremium');
