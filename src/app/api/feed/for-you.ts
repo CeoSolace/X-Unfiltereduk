@@ -41,7 +41,7 @@ function scorePost(
   if (userBehavior.likedAuthors?.includes(post.author._id)) score += 15;
   if (userBehavior.repostedAuthors?.includes(post.author._id)) score += 20;
   if (post.community && userBehavior.activeCommunities?.includes(post.community)) score += 25;
-  const commonTags = post.hashtags?.filter(tag => userBehavior.activeHashtags?.includes(tag)) || [];
+  const commonTags = post.hashtags?.filter((tag: string) => userBehavior.activeHashtags?.includes(tag)) || [];
   score += commonTags.length * 8;
 
   return score;
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
   const userId = session.userId;
   const currentTime = Date.now();
 
-  // ✅ Correct 3-arg call
   await trackEvent(userId, 'feed_view', { feed_type: 'for_you' });
 
   const user = await User.findById(userId).select('isPremium');
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
     [...recentLikes, ...recentReposts].forEach(p => {
       if (p.author) likedAuthors.add(p.author.toString());
       if (p.community) activeCommunities.add(p.community.toString());
-      p.hashtags?.forEach(tag => activeHashtags.add(tag));
+      (p.hashtags || []).forEach((tag: string) => activeHashtags.add(tag)); // ✅ FIXED: explicit `tag: string`
     });
     recentReposts.forEach(p => {
       if (p.author) repostedAuthors.add(p.author.toString());
