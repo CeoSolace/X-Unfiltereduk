@@ -1,13 +1,19 @@
 // src/app/admin/layout.tsx
+import { verifySession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Basic auth is enforced at route handler level or via middleware
-  // This layout assumes auth already passed
+  const session = await verifySession();
+
+  // Only CeoSolace (you) gets access — as per your platform rules
+  if (!session || session.username !== 'CeoSolace') {
+    redirect('/login');
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-black text-white p-4">
