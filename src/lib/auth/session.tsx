@@ -35,15 +35,16 @@ export async function createSession(userId: string): Promise<void> {
     verified: user.verified,
     following: (user.following || []).map((id: any) => id.toString()),
   };
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const expiresAt = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // Unix timestamp (seconds)
   const token = await new SignJWT(session as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
     .sign(JWT_SECRET);
+  const expiresAtDate = new Date(expiresAt * 1000); // For cookie (expects Date)
   cookies().set('session', token, {
     httpOnly: true,
     secure: true,
-    expires: expiresAt,
+    expires: expiresAtDate,
     sameSite: 'lax',
     path: '/',
   });
