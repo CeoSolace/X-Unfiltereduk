@@ -11,20 +11,47 @@ export async function POST(req: NextRequest) {
 
   const { tier } = await req.json();
 
-  // Get live price IDs from Stripe dashboard
-  const premiumPriceId = 'price_1S4Y...'; // REPLACE with your real Premium price ID
-  const orgPriceId = 'price_1S4Z...';    // REPLACE with your real Org price ID
+  let priceData;
+  if (tier === 'premium') {
+    priceData = {
+      currency: 'gbp',
+      unit_amount: 850, // £8.50 = 850 pence
+      recurring: { interval: 'month' as const },
+      product_data: {
+        name: 'UnfilteredUK Premium',
+        description: 'Blue verification, no ads, no tracking',
+      },
+    };
+  } else if (tier === 'org') {
+    priceData = {
+      currency: 'gbp',
+      unit_amount: 2500, // £25.00 = 2500 pence
+      recurring: { interval: 'month' as const },
+      product_data: {
+        name: 'UnfilteredUK Organisation',
+        description: 'Org badge, affiliates, analytics, subdomain',
+      },
+    };
+  } else {
+    return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
+  }
 
-  const priceId = tier === 'premium' ? premiumPriceId : orgPriceId;
+  try {
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price_data: priceData, quantity: 1 }],
+      client_reference_id: session.userId,
+      success_url: `${process.env.RENDER_PUBLIC_URL}/settings/billing?success=true`,
+      cancel_url: `${process.env.RENDER_PUBLIC_URL}/settings/billing`,
+      subscription_data: {
+        metadata: { userId: session.userId, tier },
+      },
+    });
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    line_items: [{ price: priceId, quantity: 1 }],
-    mode: 'subscription',
-    client_reference_id: session.userId,
-    success_url: `${process.env.RENDER_PUBLIC_URL}/settings/billing?success=true`,
-    cancel_url: `${process.env.RENDER_PUBLIC_URL}/settings/billing`,
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (error: any) {
+    console.error('Stripe error:', error);
+    return NextResponse.json({ error: 'Payment setup failed' }, { status: 500 });
+  }
 }
