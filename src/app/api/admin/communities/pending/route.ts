@@ -3,18 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuthMiddleware } from '@/middleware/adminAuth';
 import { connectDB } from '@/lib/api/client';
 import { Community } from '@/models/Community';
-import { Document } from 'mongoose';
-
-// Helper type: Lean Community with populated creator
-interface LeanCommunity {
-  _id: string;
-  name: string;
-  rules: string;
-  status: string;
-  creator: {
-    username: string;
-  };
-}
 
 export async function GET(req: NextRequest) {
   const authError = adminAuthMiddleware(req);
@@ -22,19 +10,20 @@ export async function GET(req: NextRequest) {
 
   await connectDB();
 
-  // Cast the result to LeanCommunity[]
-  const communities = (await Community.find({ status: 'pending' })
+  // Fetch pending communities and populate creator
+  const communities = await Community.find({ status: 'pending' })
     .populate('creator', 'username')
     .sort({ createdAt: -1 })
-    .lean()) as LeanCommunity[];
+    .lean(); // Returns plain objects
 
-  return NextResponse.json({
-    communities: communities.map(c => ({
-      id: c._id.toString(), // ✅ Now typed as string
-      name: c.name,
-      creator: c.creator.username,
-      rules: c.rules,
-      status: c.status,
-    })),
-  });
+  // Map safely — no type assertion needed
+  const result = communities.map(c => ({
+    id: String(c._id),
+    name: String(c.name || ''),
+    rules: String(c.rules || ''),
+    status: String(c.status || ''),
+    creator: c.creator?.username ? String(c.creator.username) : 'Unknown',
+  }));
+
+  return NextResponse.json({ communities: result });
 }
