@@ -1,4 +1,3 @@
-// src/components/feed/PostComposer.tsx
 'use client';
 
 import { useState, useRef } from 'react';
