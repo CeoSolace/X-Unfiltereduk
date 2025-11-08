@@ -14,7 +14,7 @@
     "@stripe/stripe-js": "^3.3.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.4.0",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^4.15.9",
     "mongoose": "^8.5.0",
     "next": "14.2.15",
     "react": "18.3.1",
@@ -25,11 +25,13 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
     "typescript": "^5.5.4"
   }
 }
