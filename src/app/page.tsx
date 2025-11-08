@@ -7,9 +7,14 @@ import { PostCard } from '@/components/feed/PostCard';
 import { PostComposer } from '@/components/feed/PostComposer';
 import { FeedSwitcher } from '@/components/feed/FeedSwitcher';
 
+interface FeedPost {
+  id: string;
+  [key: string]: any;
+}
+
 export default function FollowingFeed() {
   const { user, loading: userLoading } = useUser();
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
