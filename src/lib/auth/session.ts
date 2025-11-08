@@ -24,7 +24,6 @@ export async function createSession(userId: string): Promise<void> {
   );
   if (!user) throw new Error('User not found');
 
-  // Auto-verify CeoSolace
   if (user.username === 'CeoSolace') {
     user.verified = true;
     user.isPremium = true;
@@ -39,7 +38,7 @@ export async function createSession(userId: string): Promise<void> {
     verified: user.verified,
   };
 
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const token = await new SignJWT(session)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresAt)
@@ -67,6 +66,7 @@ export async function verifySession(): Promise<SessionPayload | null> {
   }
 }
 
+// ✅ This is a valid React Server Component
 export async function AuthProvider({
   children,
 }: {
