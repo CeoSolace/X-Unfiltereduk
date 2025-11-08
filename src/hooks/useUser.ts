@@ -10,6 +10,7 @@ export interface UserSession {
   isPremium: boolean;
   isOrganisation: boolean;
   following: string[];
+  avatar?: string; // ← always supposed to be here
 }
 
 export function useUser() {
